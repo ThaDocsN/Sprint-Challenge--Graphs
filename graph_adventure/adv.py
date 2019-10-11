@@ -1,3 +1,5 @@
+# from queue import Queue
+
 from room import Room
 from player import Player
 from world import World
@@ -20,10 +22,83 @@ world.printRooms()
 player = Player("Name", world.startingRoom)
 
 
+class Queue:
+    def __init__(self):
+        self.queue = []
+
+    def enqueue(self, value):
+        self.queue.append(value)
+
+    def dequeue(self):
+        if self.size() > 0:
+            return self.queue.pop(0)
+        else:
+            return None
+
+    def size(self):
+        return len(self.queue)
+
+
 # FILL THIS IN
-traversalPath = ['n', 's']
+traversalPath = []
+graph = {0: {"n": "?", "e": "?", "s": "?", "w": "?"}}
+back_up = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}
 
 
+def bfs(starting_graph):
+    que = Queue()
+    que.enqueue([starting_graph])
+    visited = set()
+    while que.size() > 0:
+        path = que.dequeue()
+        x = path[-1]
+        if x not in visited:
+            for exit_ in graph[x]:
+                if graph[x][exit_] == '?':
+                    return path
+            visited.add(x)
+            for exit_direction in graph[x]:
+                new_path = list(path)
+                new_path.append(graph[x][exit_direction])
+                que.enqueue(new_path)
+    return None
+
+
+def get_directions(path):
+    current_room = path[0]
+    directions = []
+    for room in path[1:]:
+        for exit_ in graph[current_room]:
+            if room == graph[current_room][exit_]:
+                directions.append(exit_)
+    return directions
+
+
+while True:
+    currentRoom = graph[player.currentRoom.id]
+    uncharted = []
+    for direction in currentRoom:
+        if currentRoom[direction] == '?':
+            uncharted.append(direction)
+    if len(uncharted) > 0:
+        room_exits = {}
+        exits = uncharted[0]
+        traversalPath.append(exits)
+        prev_room = player.currentRoom.id
+        player.travel(exits)
+        if player.currentRoom.id not in graph:
+            for exit_ in player.currentRoom.getExits():
+                room_exits[exit_] = '?'
+            graph[player.currentRoom.id] = room_exits
+        graph[prev_room][exits] = player.currentRoom.id
+        graph[player.currentRoom.id][back_up[exits]] = prev_room
+    else:
+        vacant = bfs(player.currentRoom.id)
+        if vacant is None:
+            break
+        for direction in get_directions(vacant):
+            player.travel(direction)
+            traversalPath.append(direction)
 # TRAVERSAL TEST
 visited_rooms = set()
 player.currentRoom = world.startingRoom
